@@ -41,7 +41,7 @@
 
   #frame{
     position:relative;
-    width:min(96vw, 960px);
+    width: min(96vw, 960px, 143vh);
     aspect-ratio: 16/10;
     background: var(--dark);
     border-radius:18px;
@@ -313,11 +313,48 @@
   #cvBtn:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(45,19,32,0.55), inset 0 0 0 1px rgba(212,175,55,0.7); }
   #cvBtn svg{ width:15px; height:15px; flex-shrink:0; }
 
+  /* floating back button */
+  #backBtn{
+    position:absolute; left:16px; bottom:16px; z-index:20;
+    display:none; align-items:center; gap:7px;
+    background: rgba(45,19,32,0.82);
+    color: var(--gold-soft); border:1px solid rgba(212,175,55,0.5);
+    font-family:'Poppins',sans-serif; font-size:12.5px; font-weight:600;
+    padding:11px 18px; border-radius:30px; cursor:pointer;
+    box-shadow:0 8px 22px rgba(45,19,32,0.45);
+    transition: transform 0.15s ease;
+  }
+  #backBtn.show{ display:flex; }
+  #backBtn:active{ transform:scale(0.96); }
+  #backBtn svg{ width:15px; height:15px; flex-shrink:0; }
+
   @media (max-width: 560px){
+    #backBtn{ left:10px; bottom:10px; padding:9px 14px; font-size:11.5px; }
     #hud{ padding:10px; }
     #roomLabel{ font-size:11px; padding:7px 12px; }
     #signature{ display:none; }
     #cvBtn{ right:10px; bottom:10px; padding:9px 14px; font-size:11.5px; }
+    #plan{ transform: scale(0.85); transform-origin: top right; }
+    #prompt{ bottom:48px; font-size:11.5px; padding:8px 14px; }
+  }
+
+  @media (max-width: 480px){
+    .modal{ padding:26px 18px 20px; border-radius:16px; }
+    .modal h2{ font-size:21px; margin-bottom:14px; }
+    .modal .close{ width:30px; height:30px; top:12px; right:12px; font-size:14px; }
+    .stat-grid{ gap:8px; }
+    .stat-card{ padding:12px 6px; }
+    .stat-num{ font-size:18px; }
+    .cert-grid{ grid-template-columns:1fr; }
+    .proj-head{ font-size:14px; padding:12px 14px; }
+    .proj-body{ padding:12px 14px 14px; }
+    .skill-card{ padding:13px; }
+    .contact-row{ padding:11px 13px; gap:11px; }
+    #intro .nav{ padding:14px 16px; }
+    #intro .hero{ padding:20px 16px; gap:22px; }
+    #intro h1{ font-size:22px; }
+    #intro p.desc{ font-size:13px; }
+    #intro .hero-img img{ max-width:100%; height:200px; }
   }
 </style>
 </head>
@@ -329,7 +366,10 @@
 
     <div id="signature">ICHRAQ ASSIM · Data & BI Engineer | Software Engineer</div>
 
-   
+    <button id="backBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Retour
+    </button>
 
     <div id="hud">
       <div id="roomLabel">Le Salon :</div>
@@ -358,7 +398,6 @@
           <div class="eyebrow">PORTFOLIO INTERACTIF</div>
           <h1>Bienvenue dans mon Portfolio<br>Web Development !</h1>
           <p class="desc">Je m'appelle Ichraq Assim, passionnée de Data Science &amp; Business Intelligence. Ici, tu découvriras mon parcours à travers une maison virtuelle : entre dans chaque pièce pour explorer mes projets, mes compétences, mes certificats et mes coordonnées.</p>
-          
         </div>
         <div class="hero-img">
           <div class="shape"></div>
@@ -391,6 +430,16 @@
     skills: "Compétences",
     contact: "Contact",
     certificates: "Certificats"
+  };
+
+  // pièce vers laquelle ramène le bouton "Retour" (utile sur mobile,
+  // sans avoir à marcher précisément jusqu'à la porte)
+  const BACK_TARGETS = {
+    about: "hub",
+    projects: "hub",
+    skills: "hub",
+    contact: "hub",
+    certificates: "about"
   };
 
   // ---------------- REAL CONTENT ----------------
@@ -544,6 +593,13 @@
   const onClick = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener('click', fn); };
   onClick('startBtn', enterHouse);
   onClick('startBtnNav', enterHouse);
+  onClick('backBtn', ()=>{
+    const target = BACK_TARGETS[currentRoomId];
+    if(!target) return;
+    const room = rooms[currentRoomId];
+    const door = room.doors.find(d => d.to === target);
+    if(door) switchRoom(door.to, door.spawn);
+  });
   const introFormEl = document.getElementById('introForm');
   if(introFormEl){
     introFormEl.addEventListener('submit', (e)=>{
@@ -643,6 +699,8 @@
       document.querySelectorAll('.plan-cell').forEach(c=>{
         c.classList.toggle('active', c.dataset.room === to);
       });
+      const backBtnEl = document.getElementById('backBtn');
+      if(backBtnEl) backBtnEl.classList.toggle('show', !!BACK_TARGETS[to]);
     };
   }
 
