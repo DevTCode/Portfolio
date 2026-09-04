@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Ichraq Assim : Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --burgundy:#6B1C3D;
+    --wine:#8B2C4A;
+    --rose-wine:#A84860;
+    --light-burgundy:#C97586;
+    --cream:#FFF5F0;
+    --gold:#D4AF37;
+    --gold-soft:#E8C766;
+    --dark:#2D1320;
+    --soft-pink:#F5E6E8;
+    --shadow: rgba(45,19,32,0.55);
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    font-family:'Poppins',system-ui,sans-serif;
+    color:var(--dark);
+    overflow:hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #stage{
+    position:relative;
+    width:100vw; height:100vh;
+    display:flex; align-items:center; justify-content:center;
+    background-color: var(--dark);
+    background-image:
+      radial-gradient(ellipse at 50% 20%, rgba(212,175,55,0.10), transparent 55%),
+      radial-gradient(circle at 12px 12px, rgba(212,175,55,0.16) 1.5px, transparent 2.5px);
+    background-size: 100% 100%, 30px 30px;
+  }
+
+  #frame{
+    position:relative;
+    width:min(96vw, 960px);
+    aspect-ratio: 16/10;
+    background: var(--dark);
+    border-radius:18px;
+    box-shadow: 0 30px 70px var(--shadow), inset 0 0 0 3px rgba(212,175,55,0.5), inset 0 0 0 8px var(--dark);
+    overflow:hidden;
+  }
+
+  canvas{ display:block; width:100%; height:100%; image-rendering: pixelated; }
+
+  /* HUD */
+  #hud{
+    position:absolute; top:0; left:0; right:0;
+    display:flex; justify-content:space-between; align-items:flex-start;
+    padding:16px 18px; pointer-events:none;
+  }
+  #roomLabel{
+    font-family:'Playfair Display', serif;
+    font-size:15px; font-weight:700;
+    letter-spacing:0.3px;
+    color:var(--gold-soft);
+    background: rgba(45,19,32,0.68);
+    backdrop-filter: blur(6px);
+    padding:9px 18px;
+    border-radius:30px;
+    border:1px solid rgba(212,175,55,0.4);
+  }
+  #signature{
+    position:absolute; top:16px; left:50%; transform:translateX(-50%);
+    font-family:'Playfair Display', serif; font-size:12px; font-weight:600;
+    color:rgba(255,245,240,0.85); letter-spacing:1.5px;
+    background:rgba(45,19,32,0.5); padding:6px 16px; border-radius:20px;
+    pointer-events:none;
+  }
+  #plan{
+    display:grid;
+    grid-template-columns:repeat(3, 15px);
+    grid-template-rows:repeat(3, 15px);
+    gap:3px;
+    background:rgba(45,19,32,0.68);
+    border:1px solid rgba(212,175,55,0.4);
+    padding:8px; border-radius:12px;
+  }
+  .plan-cell{ width:15px; height:15px; border-radius:3px; background:transparent; }
+  .plan-cell.room{ background:rgba(212,175,55,0.25); }
+  .plan-cell.active{ background:var(--gold); box-shadow:0 0 6px rgba(212,175,55,0.9); }
+
+  #prompt{
+    position:absolute; left:50%; bottom:56px; transform:translateX(-50%);
+    background:rgba(45,19,32,0.82); color:var(--gold-soft);
+    font-size:12.5px; font-weight:600; padding:9px 18px; border-radius:24px;
+    border:1px solid rgba(212,175,55,0.5);
+    opacity:0; transition:opacity 0.15s ease;
+    pointer-events:none; white-space:nowrap;
+  }
+  #prompt.show{opacity:1;}
+
+  /* Intro overlay : landing page style */
+  #intro{
+    position:absolute; inset:0; z-index:30;
+    background: var(--cream);
+    display:flex; flex-direction:column;
+    text-align:left; color:var(--dark);
+    overflow-y:auto;
+  }
+  #intro .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 30px; border-bottom:1px solid rgba(107,28,61,0.1);
+    flex-wrap:wrap; gap:10px;
+  }
+  #intro .nav .brand{
+    font-family:'Playfair Display', serif; font-weight:800; font-size:15px; color:var(--dark);
+  }
+  #intro .nav .links{ display:flex; gap:22px; font-size:12.5px; font-weight:600; color:var(--dark); opacity:0.85; }
+  #intro .nav .links span{ display:flex; align-items:center; gap:5px; }
+  #intro .nav .right{ display:flex; align-items:center; gap:14px; }
+  #intro .nav .signin{ font-size:12.5px; font-weight:700; color:var(--dark); }
+  #intro .nav .enterNav{
+    font-family:'Poppins',sans-serif; font-weight:700; font-size:12px;
+    background: var(--dark); color:#fff; border:none; padding:10px 18px; border-radius:8px; cursor:pointer;
+  }
+  #intro .hero{
+    flex:1; display:flex; align-items:center; gap:40px;
+    padding:40px 40px; flex-wrap:wrap;
+  }
+  #intro .hero-text{ flex:1 1 340px; min-width:280px; }
+  #intro .eyebrow{
+    font-size:11.5px; letter-spacing:3px; color:var(--burgundy);
+    margin-bottom:12px; font-weight:700;
+  }
+  #intro h1{
+    font-family:'Playfair Display', serif; font-weight:900;
+    font-size:clamp(24px,4vw,34px); margin:0 0 14px; line-height:1.3; color:var(--dark);
+  }
+  #intro p.desc{ font-size:14px; line-height:1.75; color:rgba(45,19,32,0.75); margin:0 0 22px; max-width:440px; }
+  #intro .signup{ display:flex; gap:10px; max-width:420px; flex-wrap:wrap; }
+  #intro .signup input{
+    flex:1 1 200px; padding:13px 16px; border-radius:9px; border:1.5px solid rgba(107,28,61,0.2);
+    font-family:'Poppins',sans-serif; font-size:13px; outline:none; background:#fff; color:var(--dark);
+  }
+  #intro .signup input:focus{ border-color:var(--burgundy); }
+  #intro .signup button{
+    font-family:'Poppins',sans-serif; font-weight:700; font-size:12.5px; letter-spacing:0.3px;
+    background: linear-gradient(135deg, var(--burgundy), var(--wine));
+    color:#fff; border:none; padding:0 20px; border-radius:9px; cursor:pointer; white-space:nowrap;
+    box-shadow:0 10px 22px rgba(107,28,61,0.3);
+  }
+  #intro .signup button:active{ transform:translateY(1px); }
+  #intro .terms{ font-size:11px; color:rgba(45,19,32,0.5); margin-top:10px; }
+  #intro .terms a{ color:var(--burgundy); text-decoration:underline; }
+  #intro .hero-img{
+    flex:1 1 300px; min-width:260px; position:relative; display:flex; justify-content:center;
+  }
+  #intro .hero-img .shape{
+    position:absolute; width:120px; height:220px; right:10%; top:8%;
+    background: linear-gradient(160deg, var(--gold-soft), var(--gold));
+    clip-path: polygon(40% 0, 100% 0, 60% 100%, 0 100%);
+    opacity:0.85; z-index:0;
+  }
+  #intro .hero-img img{
+    position:relative; z-index:1; width:100%; max-width:340px; height:280px;
+    object-fit:cover; border-radius:18px; box-shadow:0 20px 40px rgba(45,19,32,0.25);
+  }
+  @media (max-width:700px){
+    #intro .nav .links{ display:none; }
+    #intro .hero{ padding:26px 22px; }
+  }
+  .key{
+    width:36px; height:36px; border-radius:8px;
+    background:linear-gradient(135deg,var(--gold-soft),var(--gold));
+    color:var(--dark);
+    display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700;
+    box-shadow:0 3px 0 rgba(0,0,0,0.35);
+  }
+
+  /* Modal (section content) */
+  #modalLayer{
+    position:absolute; inset:0; z-index:25;
+    display:none; align-items:center; justify-content:center;
+    background:rgba(45,19,32,0.72);
+    backdrop-filter: blur(4px);
+    padding:16px;
+    height:100%;
+  }
+  #modalLayer.show{ display:flex; }
+  .modal-wrap{
+    position:relative; display:flex; justify-content:center;
+    width:100%; height:100%;
+    align-items:center;
+  }
+  .modal{
+    width:min(100%, 560px);
+    max-height:100%;
+    overflow-y:auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    background: var(--cream);
+    border-radius:20px;
+    padding:34px 30px 28px;
+    box-shadow: 0 30px 70px rgba(0,0,0,0.45);
+    border: 2px solid rgba(212,175,55,0.55);
+    position:relative;
+    animation: modalPop 0.28s ease-out;
+  }
+  @keyframes modalPop{ from{ opacity:0; transform:translateY(-16px) scale(0.97);} to{opacity:1; transform:translateY(0) scale(1);} }
+  .modal h2{
+    font-family:'Playfair Display', serif; font-weight:800;
+    font-size:26px; margin:0 0 18px;
+    background: linear-gradient(135deg, var(--burgundy), var(--wine));
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .modal p{ font-size:14.5px; line-height:1.75; margin:0 0 13px; color:var(--dark); opacity:0.92;}
+  .modal .close{
+    position:absolute; top:16px; right:16px;
+    width:34px; height:34px; border-radius:50%;
+    background: linear-gradient(135deg, var(--burgundy), var(--wine));
+    border:none; color:#fff; font-size:16px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition: transform 0.25s;
+  }
+  .modal .close:hover{ transform:rotate(90deg); }
+
+  /* stats (about) */
+  .stat-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin:18px 0 6px; }
+  .stat-card{
+    background:#fff; border-radius:14px; padding:16px 10px; text-align:center;
+    border:1.5px solid rgba(107,28,61,0.12); box-shadow:0 6px 18px rgba(107,28,61,0.08);
+  }
+  .stat-num{
+    font-family:'Playfair Display', serif; font-weight:800; font-size:22px;
+    background:linear-gradient(135deg,var(--burgundy),var(--wine));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .stat-label{ font-size:11px; color:var(--dark); opacity:0.75; margin-top:2px; }
+
+  /* projects */
+  .proj-card{
+    border-radius:14px; overflow:hidden; margin-bottom:16px;
+    border:1.5px solid rgba(107,28,61,0.14); box-shadow:0 8px 20px rgba(107,28,61,0.1);
+    background:#fff;
+  }
+  .proj-head{
+    background: linear-gradient(135deg, var(--burgundy), var(--wine));
+    color:#fff; padding:14px 16px; font-family:'Playfair Display', serif; font-weight:700; font-size:16px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .proj-body{ padding:14px 16px 16px; }
+  .proj-body p{ margin:0 0 10px; font-size:13.5px; }
+  .tag-row{ display:flex; flex-wrap:wrap; gap:6px; }
+  .tag{
+    font-size:10.5px; font-weight:600; color:#fff; padding:4px 11px; border-radius:20px;
+    background: linear-gradient(135deg, var(--burgundy), var(--wine));
+  }
+
+  /* skills */
+  .skill-card{
+    border:1.5px solid rgba(107,28,61,0.14); border-radius:14px; padding:16px;
+    margin-bottom:12px; box-shadow:0 6px 16px rgba(107,28,61,0.08); background:#fff;
+  }
+  .skill-card h3{
+    font-family:'Playfair Display', serif; font-size:15.5px; color:var(--burgundy);
+    margin:0 0 8px; display:flex; align-items:center; gap:8px;
+  }
+  .skill-card ul{ list-style:none; margin:0; padding:0; }
+  .skill-card li{ font-size:13px; padding:3px 0 3px 18px; position:relative; opacity:0.9; }
+  .skill-card li::before{ content:'◆'; position:absolute; left:0; color:var(--wine); font-size:10px; top:6px; }
+
+  /* contact */
+  .contact-row{
+    display:flex; align-items:center; gap:14px;
+    padding:13px 15px; margin-bottom:10px; border-radius:14px;
+    border:1.5px solid rgba(107,28,61,0.14); text-decoration:none; color:var(--dark);
+    background:#fff; box-shadow:0 6px 16px rgba(107,28,61,0.08);
+  }
+  .contact-row .ic{
+    width:38px; height:38px; border-radius:50%; flex-shrink:0;
+    background: linear-gradient(135deg, var(--burgundy), var(--wine));
+    display:flex; align-items:center; justify-content:center; font-size:16px;
+  }
+  .contact-row .txt strong{ display:block; font-size:11px; color:var(--burgundy); }
+  .contact-row .txt span{ font-size:13px; font-weight:500; }
+
+  /* certificates */
+  .cert-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:14px; }
+  .cert-card{
+    border-radius:14px; overflow:hidden; border:1.5px solid rgba(107,28,61,0.14);
+    box-shadow:0 8px 20px rgba(107,28,61,0.1); background:#fff;
+  }
+  .cert-card img{ display:block; width:100%; height:150px; object-fit:cover; background:var(--soft-pink); }
+  .cert-card .cert-title{
+    padding:10px 12px; font-size:12.5px; font-weight:600; color:var(--burgundy);
+    font-family:'Playfair Display', serif;
+  }
+  .cert-empty{
+    text-align:center; padding:30px 16px; color:var(--dark); opacity:0.65;
+    font-size:13.5px; border:1.5px dashed rgba(107,28,61,0.25); border-radius:14px; margin-top:14px;
+  }
+
+  /* floating CV download button */
+  #cvBtn{
+    position:absolute; right:16px; bottom:16px; z-index:20;
+    display:flex; align-items:center; gap:8px;
+    background: linear-gradient(135deg, var(--burgundy), var(--wine));
+    color:#fff; text-decoration:none;
+    font-family:'Poppins',sans-serif; font-size:12.5px; font-weight:600;
+    padding:11px 18px; border-radius:30px;
+    box-shadow:0 8px 22px rgba(45,19,32,0.45), inset 0 0 0 1px rgba(212,175,55,0.5);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  #cvBtn:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(45,19,32,0.55), inset 0 0 0 1px rgba(212,175,55,0.7); }
+  #cvBtn svg{ width:15px; height:15px; flex-shrink:0; }
+
+  @media (max-width: 560px){
+    #hud{ padding:10px; }
+    #roomLabel{ font-size:11px; padding:7px 12px; }
+    #signature{ display:none; }
+    #cvBtn{ right:10px; bottom:10px; padding:9px 14px; font-size:11.5px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="frame">
+    <canvas id="game" width="640" height="400"></canvas>
+
+    <div id="signature">ICHRAQ ASSIM · Data & BI Engineer | Software Engineer</div>
+
+   
+
+    <div id="hud">
+      <div id="roomLabel">Le Salon :</div>
+      <div id="plan">
+        <div class="plan-cell"></div><div class="plan-cell room" data-room="about"></div><div class="plan-cell"></div>
+        <div class="plan-cell room" data-room="contact"></div><div class="plan-cell room active" data-room="hub"></div><div class="plan-cell room" data-room="projects"></div>
+        <div class="plan-cell"></div><div class="plan-cell room" data-room="skills"></div><div class="plan-cell"></div>
+      </div>
+    </div>
+
+    <div id="prompt">appuie sur Entrée</div>
+
+    <div id="intro">
+      <div class="nav">
+        <div class="brand">Ichraq Assim</div>
+        <div class="links">
+          <span>🏠 Portfolio</span><span>👤 À Propos</span><span>📄 CV</span>
+        </div>
+        <div class="right">
+          <span class="signin">GitHub</span>
+          <button class="enterNav" id="startBtnNav">ENTRER</button>
+        </div>
+      </div>
+      <div class="hero">
+        <div class="hero-text">
+          <div class="eyebrow">PORTFOLIO INTERACTIF</div>
+          <h1>Bienvenue dans mon Portfolio<br>Web Development !</h1>
+          <p class="desc">Je m'appelle Ichraq Assim, passionnée de Data Science &amp; Business Intelligence. Ici, tu découvriras mon parcours à travers une maison virtuelle : entre dans chaque pièce pour explorer mes projets, mes compétences, mes certificats et mes coordonnées.</p>
+          
+        </div>
+        <div class="hero-img">
+          <div class="shape"></div>
+          <!-- Remplace src par ta propre photo -->
+          <img src="img/pic.jfif" alt="Ichraq Assim" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22340%22 height=%22280%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23F5E6E8%22/><text x=%2250%25%22 y=%2250%25%22 font-family=%22sans-serif%22 font-size=%2216%22 fill=%22%238B2C4A%22 text-anchor=%22middle%22>Ta photo ici</text></svg>'">
+        </div>
+      </div>
+      <div style="text-align:center; padding:0 0 22px; font-size:12px; color:rgba(45,19,32,0.5);">
+        ↑ ↓ ← → pour se déplacer · Entrée pour interagir · <button id="startBtn" style="background:none;border:none;color:var(--burgundy);font-weight:700;text-decoration:underline;cursor:pointer;font-family:inherit;font-size:12px;">entrer dans la maison</button>
+      </div>
+    </div>
+
+    <div id="modalLayer">
+      <div class="modal-wrap"><div class="modal" id="modalBody"></div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // titres courts affichés au-dessus de chaque porte, avant d'y entrer
+  const ROOM_TITLES = {
+    hub: "Le Salon",
+    about: "À Propos",
+    projects: "Projets",
+    skills: "Compétences",
+    contact: "Contact",
+    certificates: "Certificats"
+  };
+
+  // ---------------- REAL CONTENT ----------------
+  const CONTENT = {
+    about: {
+      stats: [["3","Stages Professionnels"],["9+","Projets Réalisés"],["25+","Technologies Maîtrisées"],["4","Langues Parlées"]],
+      html: `
+        <p>Ingénieure en Business Intelligence, Data Science et développement logiciel, je conçois des applications évolutives, des modèles prédictifs et des solutions BI de bout en bout.</p>
+        <p>Mon objectif : transformer des données brutes en informations exploitables, et des besoins métier en solutions techniques robustes : avec rigueur, dynamisme et esprit d'équipe.</p>
+        <div class="skill-card">
+          <h3><span>🎓</span>Formation</h3>
+          <ul>
+            <li>Ingénieure en BI &amp; Data Science : ISMAGI, Rabat (2023–2026)</li>
+            <li>Diplôme Universitaire de Technologie en Génie Logiciel : EST de Salé (2021–2023)</li>
+            <li>Baccalauréat Sciences Mathématiques B : Lycée Abdelmalek As Saadi (2020–2021)</li>
+          </ul>
+        </div>
+        <div class="skill-card">
+          <h3><span>🗣️</span>Langues</h3>
+          <ul>
+            <li>Arabe : langue maternelle</li>
+            <li>Français : professionnel complet</li>
+            <li>Anglais : professionnel</li>
+            <li>Chinois : débutante</li>
+          </ul>
+        </div>
+        <div class="tag-row" style="margin-top:14px;">
+          <span class="tag">Rigoureuse</span><span class="tag">Dynamique</span><span class="tag">Sérieuse</span><span class="tag">Esprit d'équipe</span>
+        </div>
+      `
+    },
+    projects: [
+      { icon:"🏢", title:"Ingénieure BI & Data Science : Stage, Huawei Technologies Maroc", desc:"Conception et développement d'une plateforme d'aide à la décision pour la gestion des incidents réseau télécom (Cloud-Based, HCS) : Rabat, 03/2025 – 08/2025.", tags:["Python","Flask","PostgreSQL","LeafletJS","HCS Cloud","Cloud Computing"] },
+      { icon:"🎵", title:"Chatbot Musical Contextuel : PFA, ISMAGI", desc:"Application web intelligente de recommandation musicale contextuelle avec chatbot conversationnel : 06/2025 – 07/2025.", tags:["Python","Flask","Jupyter/Anaconda","HTML/CSS/JS","API Spotify","API Wikipedia"] },
+      { icon:"📅", title:"Gestion des Réservations d'Événements : PFA, ISMAGI", desc:"Mise en œuvre d'une application de gestion des réservations d'événements d'entreprise : 06/2024 – 07/2024.", tags:["Spring Boot","Thymeleaf","Java"] },
+      { icon:"💪", title:"Suivi de Santé Mobile : Stage, Beyond Technology", desc:"Développement d'une application mobile de suivi d'indicateurs de santé : Rabat, 06/2023 – 08/2023.", tags:["Flutter","Firebase","Mobile"] },
+      { icon:"🚗", title:"Gestion de Location de Voitures : Projet de Fin d'Année", desc:"Application web de gestion de location de véhicules : EST de Salé, 12/2022 – 03/2023.", tags:["Laravel","Vue.js","Vuetify"] },
+      { icon:"🧠", title:"Détection de Pneumonie par Deep Learning", desc:"Projet académique : détection automatique de pneumonie via un modèle CNN, avec interface graphique.", tags:["Deep Learning","CNN","Tkinter","Python"] },
+      { icon:"📚", title:"Gestion de Bibliothèque : Java & Firebase", desc:"Projet académique : application de gestion de bibliothèque avec base de données Firebase.", tags:["Java","Firebase"] },
+      { icon:"📊", title:"Solution BI pour l'Analyse des Ventes", desc:"Projet académique : modélisation des données (schéma en flocon) et tableaux de bord Power BI.", tags:["Power BI","Snowflake Schema","Data Modeling"] },
+      { icon:"💼", title:"ERP ERPNext : TechDistribMaroc SARL", desc:"Création d'un système ERP nommé ERPNext pour une PME de distribution.", tags:["ERPNext","Business Management","PME"] }
+    ],
+    skills: [
+      { icon:"💻", group:"Langages de Programmation", items:["Python, Java, Kotlin","C, C++, C#, PHP","JavaScript, JEE, HTML5/CSS3"] },
+      { icon:"🧩", group:"Frameworks", items:[".NET, Spring Boot","Laravel, Vue.js, Flask","Streamlit, Thymeleaf, Bootstrap"] },
+      { icon:"🗄️", group:"Bases de Données", items:["MySQL, PostgreSQL","Oracle (SQL/PL-SQL)","Firebase"] },
+      { icon:"📊", group:"BI & Data", items:["Power BI, DAX, Power Query","Tableau, Snowflake"] },
+      { icon:"📐", group:"Modélisation & Design", items:["UML, Merise","UI/UX Design"] },
+      { icon:"🛠️", group:"Outils & IDE", items:["IntelliJ, Eclipse, VS Code","Android Studio, Anaconda","XAMPP, Scene Builder, draw.io"] },
+      { icon:"🏢", group:"ERP / CRM", items:["SAP, Odoo, CRM"] },
+      { icon:"☁️", group:"Cloud & Systèmes", items:["AWS, GCP, Azure, HCS Cloud","Linux, Windows"] },
+      { icon:"🔄", group:"Méthodologie", items:["Scrum / Agile"] }
+    ],
+    contact: [
+      { icon:"📧", label:"Email", value:"assimichraq123@gmail.com", href:"mailto:assimichraq123@gmail.com" },
+      { icon:"💼", label:"LinkedIn", value:"linkedin.com/in/ichraq-assim", href:"https://linkedin.com/in/ichraq-assim" },
+      { icon:"💻", label:"GitHub", value:"github.com/DevTCode", href:"https://github.com/DevTCode" },
+      { icon:"📱", label:"Téléphone", value:"+212 688 816 553", href:"tel:+212688816553" }
+    ],
+    // Ajoute l'image de chaque certificat (base64 ou chemin de fichier) dans "img"
+    certificates: [
+      { img:"img/Power BI certificate.jpg", title:"Microsoft Power BI : Udemy" },
+      { img:"img/PPCC Certificate.png", title:"PPCC (Partner) : Huawei" },
+      { img:"img/data certif.jpg", title:"Data Science, ML & NLP Bootcamp : Udemy" }
+    ]
+  };
+  // ------------------------------------------------
+
+  function rect(x,y,w,h){ return {x,y,w,h}; }
+
+  // Hub layout: doors on N/E/S/W walls, each leading to one themed room,
+  // and each of those rooms has a single door back to the hub :
+  // so from the hub she can walk into whichever room she wants, in any order.
+  const rooms = {
+    hub: {
+      name: "Le Salon : Accueil",
+      wall: "#6B1C3D", floor: "#F0DCC0", accent: "#D4AF37", rug:"#8B2C4A",
+      doors: [
+        { rect: rect(280,50,80,24),  to:"about",    spawn:{x:320,y:230}, side:"n" },
+        { rect: rect(604,160,16,80),to:"projects", spawn:{x:60, y:200}, side:"e" },
+        { rect: rect(280,340,80,24),to:"skills",   spawn:{x:320,y:90},  side:"s" },
+        { rect: rect(20,160,16,80), to:"contact",  spawn:{x:560,y:200}, side:"w" }
+      ],
+      objects: [],
+      chandelier:true, windows:[{x:60,y:60},{x:520,y:60}]
+    },
+    about: {
+      name: "Chambre : À Propos",
+      wall: "#8B2C4A", floor: "#FBEFE6", accent: "#D4AF37", rug:"#C97586",
+      doors: [
+        { rect: rect(280,340,80,24), to:"hub", spawn:{x:320,y:130}, side:"s" },
+        { rect: rect(604,160,16,80), to:"certificates", spawn:{x:60,y:200}, side:"e" }
+      ],
+      objects: [ { rect: rect(290,120,60,84), label:"Mon Parcours", key:"about", shape:"portrait" } ],
+      chandelier:false, windows:[{x:90,y:60},{x:470,y:60}]
+    },
+    certificates: {
+      name: "Galerie : Mes Certificats",
+      wall: "#A84860", floor: "#F5E6E8", accent: "#D4AF37", rug:"#8B2C4A",
+      doors: [ { rect: rect(20,160,16,80), to:"about", spawn:{x:560,y:200}, side:"w" } ],
+      objects: [ { rect: rect(290,116,60,90), label:"Voir mes certificats", key:"certificates", shape:"gallery" } ],
+      chandelier:false, windows:[{x:520,y:60}]
+    },
+    projects: {
+      name: "Atelier : Mes Projets",
+      wall: "#A84860", floor: "#F7E2E7", accent: "#D4AF37", rug:"#6B1C3D",
+      doors: [ { rect: rect(20,160,16,80), to:"hub", spawn:{x:560,y:200}, side:"w" } ],
+      objects: [ { rect: rect(290,116,60,90), label:"Voir mes projets", key:"projects", shape:"gallery" } ],
+      chandelier:false, windows:[{x:520,y:60}]
+    },
+    skills: {
+      name: "Bureau : Compétences",
+      wall: "#6B1C3D", floor: "#F5E6E8", accent: "#D4AF37", rug:"#8B2C4A",
+      doors: [ { rect: rect(280,50,80,24), to:"hub", spawn:{x:320,y:280}, side:"n" } ],
+      objects: [ { rect: rect(290,120,60,84), label:"Mes Compétences", key:"skills", shape:"shelf" } ],
+      chandelier:false, windows:[{x:90,y:60}]
+    },
+    contact: {
+      name: "Bureau : Me Contacter",
+      wall: "#C97586", floor: "#FFF5F0", accent: "#D4AF37", rug:"#A84860",
+      doors: [ { rect: rect(604,160,16,80), to:"hub", spawn:{x:60,y:200}, side:"e" } ],
+      objects: [ { rect: rect(290,124,60,80), label:"Me contacter", key:"contact", shape:"desk" } ],
+      chandelier:false, windows:[{x:470,y:60}]
+    }
+  };
+
+  const roomOrder = ["about","projects","skills","contact","hub"];
+
+  let currentRoomId = "hub";
+  let player = { x:310, y:230, w:22, h:26, speed:2.4, dir:"down", moving:false, frame:0 };
+  let keys = {};
+  let nearObject = null;
+  let paused = true;
+  let fadeAlpha = 0, fadePhase = null, fadeCb = null;
+  let touchTarget = null;
+
+  window.addEventListener('keydown', e=>{
+    keys[e.key.toLowerCase()] = true;
+    if(['arrowup','arrowdown','arrowleft','arrowright',' ','enter'].includes(e.key.toLowerCase())) e.preventDefault();
+    if(e.key === 'Enter') tryInteract();
+  });
+  window.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()] = false; });
+
+  function enterHouse(){
+    const introEl = document.getElementById('intro');
+    if(introEl) introEl.style.display='none';
+    paused = false;
+  }
+  // écouteurs sécurisés : si un élément a été supprimé du HTML par erreur,
+  // ça n'empêche plus le reste du script (et donc la boucle de jeu) de démarrer
+  const onClick = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener('click', fn); };
+  onClick('startBtn', enterHouse);
+  onClick('startBtnNav', enterHouse);
+  const introFormEl = document.getElementById('introForm');
+  if(introFormEl){
+    introFormEl.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      enterHouse();
+    });
+  }
+
+  canvas.addEventListener('pointerdown', (e)=>{
+    if(paused) return;
+    const r = canvas.getBoundingClientRect();
+    const x = (e.clientX - r.left) * (W / r.width);
+    const y = (e.clientY - r.top) * (H / r.height);
+    if(nearObject){ tryInteract(); return; }
+    touchTarget = {x,y};
+  });
+  window.addEventListener('pointerup', ()=>{ touchTarget = null; });
+
+  function closeModal(){
+    document.getElementById('modalLayer').classList.remove('show');
+    paused = false;
+  }
+
+  function openModal(key){
+    paused = true;
+    const layer = document.getElementById('modalLayer');
+    const body = document.getElementById('modalBody');
+    let html = `<button class="close" aria-label="Fermer">×</button>`;
+
+    if(key === "about"){
+      html += `<h2>Mon Parcours</h2>${CONTENT.about.html}
+        <div class="stat-grid">
+          ${CONTENT.about.stats.map(([n,l])=>`<div class="stat-card"><div class="stat-num">${n}</div><div class="stat-label">${l}</div></div>`).join("")}
+        </div>`;
+    } else if(key === "projects"){
+      html += `<h2>Mes Projets</h2>`;
+      CONTENT.projects.forEach(p=>{
+        html += `<div class="proj-card">
+          <div class="proj-head"><span>${p.icon}</span><span>${p.title}</span></div>
+          <div class="proj-body">
+            <p>${p.desc}</p>
+            <div class="tag-row">${p.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>
+          </div>
+        </div>`;
+      });
+    } else if(key === "skills"){
+      html += `<h2>Mes Compétences</h2>`;
+      CONTENT.skills.forEach(s=>{
+        html += `<div class="skill-card"><h3><span>${s.icon}</span>${s.group}</h3>
+          <ul>${s.items.map(i=>`<li>${i}</li>`).join("")}</ul></div>`;
+      });
+    } else if(key === "contact"){
+      html += `<h2>Me Contacter</h2>`;
+      CONTENT.contact.forEach(c=>{
+        html += `<a class="contact-row" href="${c.href}" target="_blank" rel="noopener">
+          <div class="ic">${c.icon}</div>
+          <div class="txt"><strong>${c.label}</strong><span>${c.value}</span></div>
+        </a>`;
+      });
+    } else if(key === "certificates"){
+      html += `<h2>Mes Certificats</h2>`;
+      if(CONTENT.certificates.length === 0){
+        html += `<div class="cert-empty">Aucun certificat ajouté pour l'instant.</div>`;
+      } else {
+        html += `<div class="cert-grid">`;
+        CONTENT.certificates.forEach(c=>{
+          const src = c.img && c.img.trim() ? c.img : "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='150'><rect width='100%25' height='100%25' fill='%23F5E6E8'/><text x='50%25' y='50%25' font-family='sans-serif' font-size='13' fill='%238B2C4A' text-anchor='middle'>Image à ajouter</text></svg>";
+          html += `<div class="cert-card">
+            <img src="${src}" alt="${c.title}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22150%22><rect width=%22100%25%22 height=%22100%25%22 fill=%22%23F5E6E8%22/><text x=%2250%25%22 y=%2250%25%22 font-family=%22sans-serif%22 font-size=%2213%22 fill=%22%238B2C4A%22 text-anchor=%22middle%22>Image à ajouter</text></svg>'">
+            <div class="cert-title">${c.title}</div>
+          </div>`;
+        });
+        html += `</div>`;
+      }
+    }
+    body.innerHTML = html;
+    body.querySelector('.close').addEventListener('click', closeModal);
+    layer.classList.add('show');
+  }
+
+  function tryInteract(){
+    if(paused || !nearObject) return;
+    openModal(nearObject.key);
+  }
+
+  function rectsOverlap(a,b){
+    return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+  }
+
+  function switchRoom(to, spawn){
+    if(fadePhase) return;
+    fadePhase = "out"; fadeAlpha = 0;
+    fadeCb = ()=>{
+      currentRoomId = to;
+      player.x = spawn.x; player.y = spawn.y;
+      document.getElementById('roomLabel').textContent = rooms[to].name + " :";
+      document.querySelectorAll('.plan-cell').forEach(c=>{
+        c.classList.toggle('active', c.dataset.room === to);
+      });
+    };
+  }
+
+  function update(){
+    if(paused) return;
+    const room = rooms[currentRoomId];
+    let dx=0, dy=0;
+    if(keys['arrowup']||keys['w']) dy -= 1;
+    if(keys['arrowdown']||keys['s']) dy += 1;
+    if(keys['arrowleft']||keys['a']) dx -= 1;
+    if(keys['arrowright']||keys['d']) dx += 1;
+
+    if(touchTarget){
+      const cx = player.x + player.w/2, cy = player.y + player.h/2;
+      const tdx = touchTarget.x - cx, tdy = touchTarget.y - cy;
+      const dist = Math.hypot(tdx,tdy);
+      if(dist > 6){ dx = tdx/dist; dy = tdy/dist; } else { touchTarget = null; }
+    }
+
+    player.moving = (dx!==0 || dy!==0);
+    if(dx!==0 && dy!==0){ dx*=0.7071; dy*=0.7071; }
+    if(Math.abs(dx) > Math.abs(dy)) player.dir = dx>0 ? "right":"left";
+    else if(dy!==0) player.dir = dy>0 ? "down":"up";
+
+    let nx = player.x + dx*player.speed;
+    let ny = player.y + dy*player.speed;
+    nx = Math.max(6, Math.min(W-player.w-6, nx));
+    ny = Math.max(66, Math.min(H-36-player.h, ny));
+    player.x = nx; player.y = ny;
+
+    if(player.moving) player.frame += 0.18;
+
+    const pRect = {x:player.x, y:player.y, w:player.w, h:player.h};
+    for(const d of room.doors){
+      if(rectsOverlap(pRect, d.rect)){
+        switchRoom(d.to, d.spawn);
+        break;
+      }
+    }
+
+    nearObject = null;
+    let best = 42;
+    for(const o of room.objects){
+      const ocx = o.rect.x + o.rect.w/2, ocy = o.rect.y + o.rect.h/2 + 22;
+      const pcx = player.x + player.w/2, pcy = player.y + player.h/2;
+      const d = Math.hypot(ocx-pcx, ocy-pcy);
+      if(d < best){ best = d; nearObject = o; }
+    }
+    const promptEl = document.getElementById('prompt');
+    if(nearObject){
+      promptEl.textContent = (window.matchMedia('(pointer:coarse)').matches ? "toucher pour ouvrir : " : "appuie sur Entrée : ") + nearObject.label;
+      promptEl.classList.add('show');
+    } else {
+      promptEl.classList.remove('show');
+    }
+  }
+
+  function drawWallPattern(x0,y0,w,h,color){
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x0,y0,w,h); ctx.clip();
+    ctx.fillStyle = color; ctx.fillRect(x0,y0,w,h);
+    ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.lineWidth = 1;
+    for(let x=x0-40; x<x0+w+40; x+=26){
+      ctx.beginPath();
+      ctx.moveTo(x,y0); ctx.lineTo(x+13,y0+h/2); ctx.lineTo(x,y0+h); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x+26,y0); ctx.lineTo(x+13,y0+h/2); ctx.lineTo(x+26,y0+h); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawRoom(room){
+    // floor (herringbone-ish)
+    ctx.fillStyle = room.floor;
+    ctx.fillRect(0,66,W,H-66);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0,66,W,H-66); ctx.clip();
+    ctx.strokeStyle = "rgba(0,0,0,0.05)"; ctx.lineWidth = 1;
+    for(let y=66; y<H; y+=16){
+      for(let x=-16; x<W; x+=16){
+        ctx.save();
+        ctx.translate(x + (Math.floor((y-66)/16)%2===0?0:8), y);
+        ctx.rotate(Math.PI/4);
+        ctx.strokeRect(-6,-6,12,12);
+        ctx.restore();
+      }
+    }
+    ctx.restore();
+
+    // rug
+    ctx.fillStyle = room.rug;
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    ctx.roundRect ? ctx.roundRect(200,240,240,110,16) : ctx.rect(200,240,240,110);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = room.accent; ctx.lineWidth = 2; ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(208,248,224,94,12); else ctx.rect(208,248,224,94);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // wall
+    drawWallPattern(0,0,W,66, room.wall);
+    ctx.fillStyle = room.accent;
+    ctx.fillRect(0,62,W,3);
+    ctx.fillStyle = "rgba(0,0,0,0.18)";
+    ctx.fillRect(0,66,W,4);
+    ctx.fillStyle = "rgba(0,0,0,0.22)";
+    ctx.fillRect(0,H-6,W,6);
+
+    // chandelier (hub only)
+    if(room.chandelier){
+      ctx.strokeStyle = room.accent; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,26); ctx.stroke();
+      ctx.fillStyle = room.accent;
+      for(let i=-2;i<=2;i++){
+        ctx.beginPath(); ctx.arc(W/2 + i*14, 30, 4, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.fillStyle = "rgba(255,235,180,0.8)";
+      for(let i=-2;i<=2;i++){
+        ctx.beginPath(); ctx.arc(W/2 + i*14, 30, 2, 0, Math.PI*2); ctx.fill();
+      }
+    }
+
+    // windows with curtain
+    (room.windows||[]).forEach(w=>{
+      ctx.fillStyle = "#cfe7ee";
+      ctx.fillRect(w.x, w.y-32, 46, 32);
+      ctx.strokeStyle = room.accent; ctx.lineWidth = 3;
+      ctx.strokeRect(w.x, w.y-32, 46, 32);
+      ctx.beginPath(); ctx.moveTo(w.x+23,w.y-32); ctx.lineTo(w.x+23,w.y); ctx.stroke();
+      ctx.fillStyle = "rgba(139,44,74,0.55)";
+      ctx.beginPath(); ctx.moveTo(w.x-4,w.y-34); ctx.quadraticCurveTo(w.x+8,w.y-10,w.x-2,w.y+2); ctx.lineTo(w.x-8,w.y+2); ctx.quadraticCurveTo(w.x-6,w.y-16,w.x-10,w.y-34); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(w.x+50,w.y-34); ctx.quadraticCurveTo(w.x+38,w.y-10,w.x+48,w.y+2); ctx.lineTo(w.x+54,w.y+2); ctx.quadraticCurveTo(w.x+52,w.y-16,w.x+56,w.y-34); ctx.closePath(); ctx.fill();
+    });
+
+    // doors
+    room.doors.forEach(d=>{
+      const r = d.rect;
+      ctx.fillStyle = "#4a1728";
+      if(r.w > r.h){ // horizontal door (n/s)
+        ctx.fillRect(r.x-4, r.y - (d.side==='n'?0:4), r.w+8, r.h + (d.side==='n'?12:12));
+        ctx.fillStyle = room.accent;
+        ctx.fillRect(r.x, r.y + (d.side==='n'?4:0), r.w, r.h);
+      } else { // vertical door (e/w)
+        ctx.fillRect(r.x - (d.side==='w'?4:0), r.y-4, r.w + 12, r.h+8);
+        ctx.fillStyle = room.accent;
+        ctx.fillRect(r.x + (d.side==='w'?4:0), r.y, r.w, r.h);
+      }
+      ctx.fillStyle = "#2D1320";
+      ctx.beginPath();
+      const hx = r.w > r.h ? r.x + r.w/2 : (d.side==='w'? r.x+r.w-4 : r.x+4);
+      const hy = r.w > r.h ? (d.side==='n'? r.y+r.h-6 : r.y+6) : r.y+r.h/2;
+      ctx.arc(hx,hy,2.4,0,Math.PI*2); ctx.fill();
+
+      // titre de la pièce affiché avant d'entrer
+      const label = ROOM_TITLES[d.to] || d.to;
+      const lx = r.w > r.h ? r.x + r.w/2 : (d.side==='w'? r.x+r.w+2 : r.x-2);
+      const ly = r.w > r.h ? (d.side==='n'? r.y - 8 : r.y + r.h + 16) : r.y - 8;
+      ctx.save();
+      ctx.font = "700 11px 'Poppins', sans-serif";
+      ctx.textAlign = r.w > r.h ? "center" : (d.side==='w' ? "left" : "right");
+      ctx.textBaseline = "alphabetic";
+      const tw = ctx.measureText(label).width;
+      const padX = 7;
+      let bx = ctx.textAlign === "center" ? lx - tw/2 - padX : (ctx.textAlign === "left" ? lx - padX : lx - tw - padX);
+      ctx.fillStyle = "rgba(45,19,32,0.82)";
+      if(ctx.roundRect){ ctx.beginPath(); ctx.roundRect(bx, ly-11, tw+padX*2, 16, 8); ctx.fill(); }
+      else { ctx.fillRect(bx, ly-11, tw+padX*2, 16); }
+      ctx.fillStyle = "#F0D98C";
+      ctx.fillText(label, lx, ly);
+      ctx.restore();
+    });
+
+    // interactive objects
+    room.objects.forEach(o=>{
+      const glow = nearObject === o;
+      ctx.save();
+      if(glow){ ctx.shadowColor = room.accent; ctx.shadowBlur = 22; }
+      drawObjectShape(o, room.accent);
+      ctx.restore();
+    });
+  }
+
+  function drawObjectShape(o, accent){
+    const {x,y,w,h} = o.rect;
+    if(o.shape === "portrait"){
+      ctx.fillStyle = "#3a1420"; ctx.fillRect(x-4,y-4,w+8,h+8);
+      ctx.fillStyle = accent; ctx.fillRect(x,y,w,h);
+      ctx.fillStyle = "#F5E6E8"; ctx.fillRect(x+7,y+7,w-14,h-14);
+      ctx.fillStyle = "#8B2C4A";
+      ctx.beginPath(); ctx.arc(x+w/2, y+h/2-8, 10, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(x+w/2-14,y+h-10); ctx.quadraticCurveTo(x+w/2,y+h-30,x+w/2+14,y+h-10); ctx.fill();
+    } else if(o.shape === "gallery"){
+      ctx.fillStyle = "#3a1420"; ctx.fillRect(x-6,y-6,w+12,h+12);
+      const cols=3, rows=2, pad=6;
+      const cw=(w-pad*(cols-1))/cols, ch=(h-pad*(rows-1))/rows;
+      let i=0;
+      for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
+        ctx.fillStyle = i%2===0 ? accent : "#F7E2E7";
+        ctx.fillRect(x+c*(cw+pad), y+r*(ch+pad), cw, ch);
+        i++;
+      }
+    } else if(o.shape === "shelf"){
+      ctx.fillStyle = "#3a1420"; ctx.fillRect(x,y,w,h);
+      for(let i=0;i<3;i++){
+        ctx.fillStyle = accent;
+        ctx.fillRect(x+6, y+8+i*24, w-12, 6);
+        for(let b=0;b<5;b++){
+          ctx.fillStyle = b%2===0 ? "#F5E6E8" : "#A84860";
+          ctx.fillRect(x+8+b*8, y+16+i*24, 6, 14);
+        }
+      }
+    } else if(o.shape === "desk"){
+      ctx.fillStyle = "#3a1420"; ctx.fillRect(x,y+h-14,w,14);
+      ctx.fillStyle = accent; ctx.fillRect(x-6,y+h-8,w+12,10);
+      ctx.fillStyle = "#F5E6E8"; ctx.fillRect(x+6,y,w-12,h-16);
+      ctx.fillStyle = "#8B2C4A"; ctx.fillRect(x+10,y+4,w-20,6);
+      ctx.fillStyle = accent;
+      ctx.beginPath(); ctx.moveTo(x+w-16,y+h-16); ctx.lineTo(x+w-16,y+h-30); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x+w-16,y+h-30); ctx.lineTo(x+w-8,y+h-38); ctx.strokeStyle=accent; ctx.lineWidth=3; ctx.stroke();
+      ctx.fillStyle = "rgba(255,220,150,0.9)";
+      ctx.beginPath(); ctx.arc(x+w-8,y+h-40,5,0,Math.PI*2); ctx.fill();
+    }
+  }
+
+  function drawPlayer(){
+    const cx = player.x + player.w/2, cy = player.y + player.h/2;
+    const bob = player.moving ? Math.sin(player.frame*6)*2 : Math.sin(player.frame*2)*0.6;
+    const faceShift = player.dir === "left" ? -2 : player.dir === "right" ? 2 : 0;
+
+    ctx.save();
+    ctx.translate(cx, cy+bob);
+
+    ctx.fillStyle = "rgba(45,19,32,0.28)";
+    ctx.beginPath(); ctx.ellipse(0, player.h/2 + 8, player.w/2, 5, 0, 0, Math.PI*2); ctx.fill();
+
+    ctx.fillStyle = "#2D1320";
+    ctx.fillRect(-6, player.h/2 - 2, 4, 7);
+    ctx.fillRect(2, player.h/2 - 2, 4, 7);
+
+    // dress (burgundy with gold trim)
+    ctx.fillStyle = "#8B2C4A";
+    ctx.beginPath();
+    ctx.moveTo(-7,-4); ctx.lineTo(7,-4); ctx.lineTo(11,player.h/2-3); ctx.lineTo(-11,player.h/2-3);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = "#D4AF37"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-10,player.h/2-5); ctx.lineTo(10,player.h/2-5); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-7,-4); ctx.lineTo(7,-4); ctx.stroke();
+
+    ctx.fillStyle = "#ffdcb8";
+    ctx.beginPath(); ctx.arc(-10,2,3,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(10,2,3,0,Math.PI*2); ctx.fill();
+    ctx.fillRect(-3,-8,6,6);
+
+    const headY = -18;
+    ctx.save();
+    ctx.translate(faceShift, 0);
+
+    ctx.fillStyle = "#4a2f22";
+    ctx.beginPath(); ctx.ellipse(0, headY, 12.5, 12, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(11, headY-2); ctx.quadraticCurveTo(20, headY+4, 15, headY+16);
+    ctx.quadraticCurveTo(11, headY+10, 9, headY+2); ctx.closePath(); ctx.fill();
+
+    ctx.fillStyle = "#ffdcb8";
+    ctx.beginPath(); ctx.ellipse(0, headY+1, 10, 10, 0, 0, Math.PI*2); ctx.fill();
+
+    ctx.fillStyle = "#4a2f22";
+    ctx.beginPath();
+    ctx.moveTo(-10, headY-3); ctx.quadraticCurveTo(-6, headY-12, 0, headY-10);
+    ctx.quadraticCurveTo(6, headY-12, 10, headY-3);
+    ctx.quadraticCurveTo(4, headY-6, 0, headY-5);
+    ctx.quadraticCurveTo(-4, headY-6, -10, headY-3);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(-9.5, headY+3, 2.6, 6, 0.3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(9.5, headY+3, 2.6, 6, -0.3, 0, Math.PI*2); ctx.fill();
+
+    ctx.fillStyle = "#2D1320";
+    ctx.beginPath(); ctx.ellipse(-3.6, headY+2, 1.7, 2.3, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(3.6, headY+2, 1.7, 2.3, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath(); ctx.arc(-3.1, headY+1.2, 0.6, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(4.1, headY+1.2, 0.6, 0, Math.PI*2); ctx.fill();
+
+    ctx.strokeStyle = "#2D1320"; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(-5.1, headY+0.5); ctx.lineTo(-6.1, headY-0.4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(5.1, headY+0.5); ctx.lineTo(6.1, headY-0.4); ctx.stroke();
+
+    ctx.fillStyle = "rgba(168,72,96,0.5)";
+    ctx.beginPath(); ctx.ellipse(-6.5, headY+5.5, 2, 1.3, 0, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(6.5, headY+5.5, 2, 1.3, 0, 0, Math.PI*2); ctx.fill();
+
+    ctx.strokeStyle = "#8B2C4A"; ctx.lineWidth = 1.1; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(0, headY+4, 2.4, 0.2*Math.PI, 0.8*Math.PI); ctx.stroke();
+
+    // gold bow
+    ctx.fillStyle = "#D4AF37";
+    ctx.beginPath(); ctx.moveTo(7,headY-9); ctx.lineTo(2,headY-6); ctx.lineTo(7,headY-3); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(13,headY-9); ctx.lineTo(8,headY-6); ctx.lineTo(13,headY-3); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#a3811f";
+    ctx.beginPath(); ctx.arc(7.5, headY-6, 1.6, 0, Math.PI*2); ctx.fill();
+
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function render(){
+    ctx.clearRect(0,0,W,H);
+    const room = rooms[currentRoomId];
+    drawRoom(room);
+    drawPlayer();
+
+    if(fadePhase){
+      fadeAlpha += 0.09;
+      if(fadeAlpha >= 1){
+        fadeAlpha = 1;
+        if(fadePhase === "out"){
+          if(fadeCb){ fadeCb(); fadeCb = null; }
+          fadePhase = "in"; fadeAlpha = 1;
+        } else { fadePhase = null; fadeAlpha = 0; }
+      }
+      const a = fadePhase === "in" ? (1 - fadeAlpha) : fadeAlpha;
+      ctx.fillStyle = `rgba(45,19,32,${a})`;
+      ctx.fillRect(0,0,W,H);
+    }
+  }
+
+  function loop(){
+    try{
+      update();
+      render();
+    } catch(err){
+      console.error("Erreur dans la boucle de jeu :", err);
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+</script>
+</body>
+</html>
