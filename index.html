@@ -166,7 +166,14 @@
   }
   @media (max-width:700px){
     #intro .nav .links{ display:none; }
-    #intro .hero{ padding:26px 22px; }
+    #intro .hero{
+      flex-direction:column; align-items:center; text-align:center;
+      padding:26px 22px; gap:26px;
+    }
+    #intro .hero-text{ flex:none; width:100%; max-width:460px; }
+    #intro p.desc{ margin-left:auto; margin-right:auto; }
+    #intro .signup{ justify-content:center; margin:0 auto; }
+    #intro .hero-img{ flex:none; width:100%; max-width:340px; }
   }
   .key{
     width:36px; height:36px; border-radius:8px;
@@ -328,6 +335,17 @@
   #backBtn:active{ transform:scale(0.96); }
   #backBtn svg{ width:15px; height:15px; flex-shrink:0; }
 
+  #hud-left{ display:flex; align-items:center; gap:8px; pointer-events:auto; }
+  #homeBtn{
+    width:36px; height:36px; border-radius:50%;
+    background: rgba(45,19,32,0.68); backdrop-filter: blur(6px);
+    border:1px solid rgba(212,175,55,0.4); color:var(--gold-soft);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0; transition: transform 0.15s ease;
+  }
+  #homeBtn:active{ transform:scale(0.9); }
+  #homeBtn svg{ width:16px; height:16px; }
+
   @media (max-width: 560px){
     #backBtn{ left:10px; bottom:10px; padding:9px 14px; font-size:11.5px; }
     #hud{ padding:10px; }
@@ -372,7 +390,12 @@
     </button>
 
     <div id="hud">
-      <div id="roomLabel">Le Salon :</div>
+      <div id="hud-left">
+        <button id="homeBtn" title="Retour à l'accueil">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        </button>
+        <div id="roomLabel">Le Salon :</div>
+      </div>
       <div id="plan">
         <div class="plan-cell"></div><div class="plan-cell room" data-room="about"></div><div class="plan-cell"></div>
         <div class="plan-cell room" data-room="contact"></div><div class="plan-cell room active" data-room="hub"></div><div class="plan-cell room" data-room="projects"></div>
@@ -389,14 +412,13 @@
           <span>🏠 Portfolio</span><span>👤 À Propos</span><span>📄 CV</span>
         </div>
         <div class="right">
-          <span class="signin">GitHub</span>
           <button class="enterNav" id="startBtnNav">ENTRER</button>
         </div>
       </div>
       <div class="hero">
         <div class="hero-text">
           <div class="eyebrow">PORTFOLIO INTERACTIF</div>
-          <h1>Bienvenue dans mon Portfolio<br>Web Development !</h1>
+          <h1>Bienvenue dans mon Portfolio</h1>
           <p class="desc">Je m'appelle Ichraq Assim, passionnée de Data Science &amp; Business Intelligence. Ici, tu découvriras mon parcours à travers une maison virtuelle : entre dans chaque pièce pour explorer mes projets, mes compétences, mes certificats et mes coordonnées.</p>
         </div>
         <div class="hero-img">
@@ -588,11 +610,25 @@
     if(introEl) introEl.style.display='none';
     paused = false;
   }
+  function goHome(){
+    const introEl = document.getElementById('intro');
+    if(introEl) introEl.style.display='flex';
+    paused = true;
+    currentRoomId = "hub";
+    player.x = 310; player.y = 230;
+    document.getElementById('roomLabel').textContent = rooms.hub.name + " :";
+    document.querySelectorAll('.plan-cell').forEach(c=>{
+      c.classList.toggle('active', c.dataset.room === "hub");
+    });
+    const backBtnEl = document.getElementById('backBtn');
+    if(backBtnEl) backBtnEl.classList.remove('show');
+  }
   // écouteurs sécurisés : si un élément a été supprimé du HTML par erreur,
   // ça n'empêche plus le reste du script (et donc la boucle de jeu) de démarrer
   const onClick = (id, fn) => { const el = document.getElementById(id); if(el) el.addEventListener('click', fn); };
   onClick('startBtn', enterHouse);
   onClick('startBtnNav', enterHouse);
+  onClick('homeBtn', goHome);
   onClick('backBtn', ()=>{
     const target = BACK_TARGETS[currentRoomId];
     if(!target) return;
